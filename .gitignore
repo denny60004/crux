@@ -1,0 +1,13 @@
+# IntelliJ project files
+*.iml
+.idea/
+
+# OS X
+.DS_Store
+
+/.GOPATH
+/bin
+/vendor
+/test/test1
+/test/test2
+
