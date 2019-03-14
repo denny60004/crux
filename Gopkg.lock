@@ -73,14 +73,6 @@
   revision = "ef8a98b0bbce4a65b5aa4c368430a80ddc533168"
 
 [[projects]]
-  branch = "master"
-  digest = "1:e29757afd23af4c0c109594ccf0daaf8dd8e325f56ad38febbc4d13adfde0614"
-  name = "github.com/jsimonetti/berkeleydb"
-  packages = ["."]
-  pruneopts = "T"
-  revision = "5cde5eaaf78c6510c5f64f5347244806a06ba87b"
-
-[[projects]]
   digest = "1:599ec2ed1b0ab8e5b2b6d6d849c47cbbf5733d7988aee541fd1e5befe69b6095"
   name = "github.com/kevinburke/nacl"
   packages = [
@@ -313,7 +305,6 @@
   input-imports = [
     "github.com/blk-io/chimera-api/chimera",
     "github.com/grpc-ecosystem/grpc-gateway/runtime",
-    "github.com/jsimonetti/berkeleydb",
     "github.com/kevinburke/nacl",
     "github.com/kevinburke/nacl/box",
     "github.com/kevinburke/nacl/secretbox",

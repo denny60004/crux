@@ -1,17 +1,18 @@
 package main
 
 import (
+	"net/http"
+	"os"
+	"path"
+	"strings"
+	"time"
+
 	"github.com/blk-io/crux/api"
 	"github.com/blk-io/crux/config"
 	"github.com/blk-io/crux/enclave"
 	"github.com/blk-io/crux/server"
 	"github.com/blk-io/crux/storage"
 	log "github.com/sirupsen/logrus"
-	"net/http"
-	"os"
-	"path"
-	"strings"
-	"time"
 )
 
 func main() {
@@ -72,11 +73,7 @@ func main() {
 	ipcPath := path.Join(workDir, ipcFile)
 	var db storage.DataStore
 	var err error
-	if config.GetBool(config.BerkeleyDb) {
-		db, err = storage.InitBerkeleyDb(storagePath)
-	} else {
-		db, err = storage.InitLevelDb(storagePath)
-	}
+	db, err = storage.InitLevelDb(storagePath)
 
 	if err != nil {
 		log.Fatalf("Unable to initialise storage, error: %v", err)

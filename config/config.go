@@ -4,9 +4,10 @@ package config
 import (
 	"flag"
 	"fmt"
+	"os"
+
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"os"
 )
 
 const (
@@ -24,7 +25,7 @@ const (
 
 	GenerateKeys = "generate-keys"
 
-	BerkeleyDb       = "berkeleydb"
+	// BerkeleyDb       = "berkeleydb"
 	UseGRPC          = "grpc"
 	GrpcJsonPort     = "grpcport"
 	NetworkInterface = "networkinterface"
@@ -53,8 +54,8 @@ func InitFlags() {
 	flag.String(PublicKeys, "", "Public keys hosted by this node")
 	flag.String(PrivateKeys, "", "Private keys hosted by this node")
 	flag.String(Storage, "crux.db", "Database storage file name")
-	flag.Bool(BerkeleyDb, false,
-		"Use Berkeley DB for working with an existing Constellation data store [experimental]")
+	// flag.Bool(BerkeleyDb, false,
+	// 	"Use Berkeley DB for working with an existing Constellation data store [experimental]")
 
 	flag.Int(Verbosity, 1, "Verbosity level of logs (0=fatal, 1=warn, 2=info, 3=debug)")
 	flag.Int(VerbosityShorthand, 1, "Verbosity level of logs (shorthand)")
