@@ -9,6 +9,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
+	"strings"
+
 	"github.com/blk-io/crux/api"
 	"github.com/blk-io/crux/storage"
 	"github.com/blk-io/crux/utils"
@@ -16,9 +20,6 @@ import (
 	"github.com/kevinburke/nacl/box"
 	"github.com/kevinburke/nacl/secretbox"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
-	"path/filepath"
-	"strings"
 )
 
 // SecureEnclave is the secure transaction enclave.
@@ -146,7 +147,7 @@ func (s *SecureEnclave) store(
 	} else {
 		toSelf = false
 	}
-	
+
 	epl, masterKey := createEncryptedPayload(message, senderPubKey, recipients)
 
 	for i, recipient := range recipients {
@@ -172,16 +173,16 @@ func (s *SecureEnclave) store(
 	}
 
 	// store locally
-	recipientKey, err := utils.ToKey(recipients[0])
-	if err != nil {
-		log.WithField("recipientKey", recipientKey).Errorf(
-			"Unable to load recipient, %v", err)
-	}
+	// recipientKey, err := utils.ToKey(recipients[0])
+	// if err != nil {
+	// 	log.WithField("recipientKey", recipientKey).Errorf(
+	// 		"Unable to load recipient, %v", err)
+	// }
 
-	sharedKey := s.resolveSharedKey(senderPrivKey, senderPubKey, recipientKey)
+	// sharedKey := s.resolveSharedKey(senderPrivKey, senderPubKey, recipientKey)
 
-	sealedBox := sealPayload(epl.RecipientNonce, masterKey, sharedKey)
-	epl.RecipientBoxes = [][]byte{sealedBox}
+	// sealedBox := sealPayload(epl.RecipientNonce, masterKey, sharedKey)
+	// epl.RecipientBoxes = [][]byte{sealedBox}
 
 	encodedEpl := api.EncodePayloadWithRecipients(epl, recipients)
 	digest, err := s.storePayload(epl, encodedEpl)
@@ -199,7 +200,6 @@ func (s *SecureEnclave) store(
 			log.WithFields(log.Fields{
 				"recipient": hex.EncodeToString(recipient), "digest": hex.EncodeToString(digest),
 			}).Debug("Publishing payload")
-
 			s.publishPayload(recipientEpl, recipient)
 		}
 	}
