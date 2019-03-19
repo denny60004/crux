@@ -38,7 +38,6 @@ type PartyInfo struct {
 	parties    map[string]bool               // Node (or party) URLs
 	client     utils.HttpClient
 	grpc       bool
-	mux        sync.Mutex
 }
 
 // GetRecipient retrieves the URL associated with the provided recipient.
@@ -291,7 +290,6 @@ func (s *PartyInfo) UpdatePartyInfo(encoded []byte) {
 }
 
 func (s *PartyInfo) UpdatePartyInfoGrpc(url string, recipients map[[nacl.KeySize]byte]string, parties map[string]bool) {
-	s.mux.Lock()
 	// log.Println("-------------update start------------------")
 	// log.Println(url)
 	// for key, value := range s.recipients {
@@ -308,7 +306,6 @@ func (s *PartyInfo) UpdatePartyInfoGrpc(url string, recipients map[[nacl.KeySize
 			// log.Println(hex.EncodeToString(publicKey[:]), url)
 		}
 	}
-	defer s.mux.Unlock()
 	// log.Println("-------------update end------------------")
 	// for key, value := range s.recipients {
 	// 	log.Println(hex.EncodeToString(key[:]), value)
