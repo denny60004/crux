@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/blk-io/chimera-api/chimera"
@@ -37,6 +38,7 @@ type PartyInfo struct {
 	parties    map[string]bool               // Node (or party) URLs
 	client     utils.HttpClient
 	grpc       bool
+	mux        sync.Mutex
 }
 
 // GetRecipient retrieves the URL associated with the provided recipient.
@@ -55,7 +57,6 @@ func InitPartyInfo(rawUrl string, otherNodes []string, client utils.HttpClient, 
 	for _, node := range otherNodes {
 		parties[node] = true
 	}
-
 	return PartyInfo{
 		url:        rawUrl,
 		recipients: make(map[[nacl.KeySize]byte]string),
@@ -78,7 +79,6 @@ func CreatePartyInfo(
 		parties[node] = true
 		recipients[*otherKeys[i]] = node
 	}
-
 	return PartyInfo{
 		url:        url,
 		recipients: recipients,
@@ -200,6 +200,10 @@ func (s *PartyInfo) GetPartyInfo() {
 
 func (s *PartyInfo) updatePartyInfoGrpc(partyInfoReq chimera.PartyInfoResponse, rawUrl string) error {
 	pi, err := DecodePartyInfo(partyInfoReq.Payload)
+	// log.Println("-------------Update info------------------")
+	// for key, value := range pi.recipients {
+	// 	log.Println(hex.EncodeToString(key[:]), value)
+	// }
 	if err != nil {
 		log.WithField("url", rawUrl).Errorf(
 			"Unable to decode partyInfo response from host, %v", err)
@@ -242,7 +246,7 @@ func (s *PartyInfo) PollPartyInfo() {
 	time.Sleep(time.Duration(rand.Intn(16)) * time.Second)
 	s.GetPartyInfo()
 
-	ticker := time.NewTicker(2 * time.Minute)
+	ticker := time.NewTicker(2 * time.Second)
 	quit := make(chan struct{})
 	go func() {
 		for {
@@ -287,6 +291,12 @@ func (s *PartyInfo) UpdatePartyInfo(encoded []byte) {
 }
 
 func (s *PartyInfo) UpdatePartyInfoGrpc(url string, recipients map[[nacl.KeySize]byte]string, parties map[string]bool) {
+	s.mux.Lock()
+	// log.Println("-------------update start------------------")
+	// log.Println(url)
+	// for key, value := range s.recipients {
+	// 	log.Println(hex.EncodeToString(key[:]), value)
+	// }
 	for publicKey, url := range recipients {
 		// we should ignore messages about ourselves
 		// in order to stop people masquerading as you, there
@@ -294,9 +304,15 @@ func (s *PartyInfo) UpdatePartyInfoGrpc(url string, recipients map[[nacl.KeySize
 		// url -> node broadcast
 		if url != s.url {
 			s.recipients[publicKey] = url
+			// log.Println("-------------updating--------------------")
+			// log.Println(hex.EncodeToString(publicKey[:]), url)
 		}
 	}
-
+	// log.Println("-------------update end------------------")
+	// for key, value := range s.recipients {
+	// 	log.Println(hex.EncodeToString(key[:]), value)
+	// }
+	s.mux.Unlock()
 	for url := range parties {
 		// we don't want to broadcast party info to ourselves
 		s.parties[url] = true

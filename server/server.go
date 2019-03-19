@@ -6,16 +6,17 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/blk-io/crux/api"
-	"github.com/blk-io/crux/utils"
-	"github.com/kevinburke/nacl"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"net/textproto"
 	"os"
 	"strconv"
+
+	"github.com/blk-io/crux/api"
+	"github.com/blk-io/crux/utils"
+	"github.com/kevinburke/nacl"
+	log "github.com/sirupsen/logrus"
 )
 
 // Enclave is the interface used by the transaction enclaves.
