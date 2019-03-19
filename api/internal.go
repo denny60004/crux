@@ -308,11 +308,11 @@ func (s *PartyInfo) UpdatePartyInfoGrpc(url string, recipients map[[nacl.KeySize
 			// log.Println(hex.EncodeToString(publicKey[:]), url)
 		}
 	}
+	defer s.mux.Unlock()
 	// log.Println("-------------update end------------------")
 	// for key, value := range s.recipients {
 	// 	log.Println(hex.EncodeToString(key[:]), value)
 	// }
-	s.mux.Unlock()
 	for url := range parties {
 		// we don't want to broadcast party info to ourselves
 		s.parties[url] = true
