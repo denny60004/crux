@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/binary"
+
 	"github.com/blk-io/crux/utils"
 	"github.com/kevinburke/nacl"
 )
@@ -69,7 +70,7 @@ func EncodePartyInfo(pi PartyInfo) []byte {
 
 	encoded, offset = writeSlice([]byte(pi.url), encoded, offset)
 	encoded, offset = writeInt(len(pi.recipients), encoded, offset)
-
+	pi.RLock()
 	for recipient, url := range pi.recipients {
 		tuple := [][]byte{
 			recipient[:],
@@ -77,6 +78,7 @@ func EncodePartyInfo(pi PartyInfo) []byte {
 		}
 		encoded, offset = writeSliceOfSlice(tuple, encoded, offset)
 	}
+	defer pi.RUnlock()
 
 	parties := make([][]byte, len(pi.parties))
 	i := 0

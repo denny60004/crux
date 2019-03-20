@@ -38,7 +38,7 @@ type PartyInfo struct {
 	parties    map[string]bool               // Node (or party) URLs
 	client     utils.HttpClient
 	grpc       bool
-	mux        sync.Mutex
+	sync.RWMutex
 }
 
 // GetRecipient retrieves the URL associated with the provided recipient.
@@ -97,7 +97,7 @@ func (s *PartyInfo) RegisterPublicKeys(pubKeys []nacl.Key) {
 func (s *PartyInfo) GetPartyInfoGrpc() {
 	recipients := make(map[string][]byte)
 	for key, url := range s.recipients {
-		recipients[url] = key[:]
+		copy(recipients[url], key[:])
 	}
 	urls := make(map[string]bool)
 	for k, v := range s.parties {
@@ -246,7 +246,7 @@ func (s *PartyInfo) PollPartyInfo() {
 	time.Sleep(time.Duration(rand.Intn(16)) * time.Second)
 	s.GetPartyInfo()
 
-	ticker := time.NewTicker(1 * time.Minute)
+	ticker := time.NewTicker(2 * time.Second)
 	quit := make(chan struct{})
 	go func() {
 		for {
