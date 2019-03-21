@@ -33,77 +33,72 @@ type EncryptedPayload struct {
 
 // PartyInfo is a struct that stores details of all enclave nodes (or parties) on the network.
 type PartyInfo struct {
-	url        string                        // URL identifying this node
-	recipients map[[nacl.KeySize]byte]string // public key -> URL
-	parties    map[string]bool               // Node (or party) URLs
+	url string // URL identifying this node
+	// recipients map[[nacl.KeySize]byte]string // public key -> URL
+	// parties    map[string]bool               // Node (or party) URLs
+	recipients sync.Map // public key -> URL
+	parties    sync.Map // Node (or party) URLs
 	client     utils.HttpClient
 	grpc       bool
-	sync.RWMutex
 }
 
 // GetRecipient retrieves the URL associated with the provided recipient.
 func (s *PartyInfo) GetRecipient(key nacl.Key) (string, bool) {
-	value, ok := s.recipients[*key]
-	return value, ok
+	value, ok := s.recipients.Load(*key)
+	return value.(string), ok
 }
 
 func (s *PartyInfo) GetAllValues() (string, map[[nacl.KeySize]byte]string, map[string]bool) {
-	return s.url, s.recipients, s.parties
+	recipients := make(map[[nacl.KeySize]byte]string)
+	s.recipients.Range(func(key, url interface{}) bool {
+		c := key.([32]byte)
+		recipients[c] = url.(string)
+		return true
+	})
+	parties := make(map[string]bool)
+	s.parties.Range(func(k, v interface{}) bool {
+		parties[k.(string)] = v.(bool)
+		return true
+	})
+	return s.url, recipients, parties
 }
 
 // InitPartyInfo initializes a new PartyInfo store.
 func InitPartyInfo(rawUrl string, otherNodes []string, client utils.HttpClient, grpc bool) PartyInfo {
-	parties := make(map[string]bool)
+	// parties := make(map[string]bool)
+	var parties sync.Map
 	for _, node := range otherNodes {
-		parties[node] = true
+		parties.Store(node, true)
 	}
+	var recipients sync.Map
 	return PartyInfo{
 		url:        rawUrl,
-		recipients: make(map[[nacl.KeySize]byte]string),
+		recipients: recipients,
 		parties:    parties,
 		client:     client,
 		grpc:       grpc,
 	}
 }
 
-// CreatePartyInfo creates a new PartyInfo struct.
-func CreatePartyInfo(
-	url string,
-	otherNodes []string,
-	otherKeys []nacl.Key,
-	client utils.HttpClient) PartyInfo {
-
-	recipients := make(map[[nacl.KeySize]byte]string)
-	parties := make(map[string]bool)
-	for i, node := range otherNodes {
-		parties[node] = true
-		recipients[*otherKeys[i]] = node
-	}
-	return PartyInfo{
-		url:        url,
-		recipients: recipients,
-		parties:    parties,
-		client:     client,
-	}
-}
-
 // RegisterPublicKeys associates the provided public keys with this node.
 func (s *PartyInfo) RegisterPublicKeys(pubKeys []nacl.Key) {
 	for _, pubKey := range pubKeys {
-		s.recipients[*pubKey] = s.url
+		s.recipients.Store(*pubKey, s.url)
 	}
 }
 
 func (s *PartyInfo) GetPartyInfoGrpc() {
 	recipients := make(map[string][]byte)
-	for key, url := range s.recipients {
-		copy(recipients[url], key[:])
-	}
+	s.recipients.Range(func(key, url interface{}) bool {
+		c := key.([32]byte)
+		recipients[url.(string)] = c[:]
+		return true
+	})
 	urls := make(map[string]bool)
-	for k, v := range s.parties {
-		urls[k] = v
-	}
-
+	s.parties.Range(func(k, v interface{}) bool {
+		urls[k.(string)] = v.(bool)
+		return true
+	})
 	for rawUrl := range urls {
 		if rawUrl == s.url {
 			continue
@@ -121,14 +116,13 @@ func (s *PartyInfo) GetPartyInfoGrpc() {
 			log.Errorf("Client is not intialised")
 			continue
 		}
-		party := chimera.PartyInfo{Url: rawUrl, Recipients: recipients, Parties: s.parties}
-
+		party := chimera.PartyInfo{Url: rawUrl, Recipients: recipients, Parties: urls}
 		partyInfoResp, err := cli.UpdatePartyInfo(context.Background(), &party)
 		if err != nil {
 			log.Errorf("Error in updating party info %s", err)
 			continue
 		} else {
-			log.Printf("Connected to the other node %s", rawUrl)
+			// log.Printf("Connected to the other node %s", rawUrl)
 		}
 		err = s.updatePartyInfoGrpc(*partyInfoResp, s.url)
 		if err != nil {
@@ -149,9 +143,10 @@ func (s *PartyInfo) GetPartyInfo() {
 
 	// First copy our endpoints as we update this map in place
 	urls := make(map[string]bool)
-	for k, v := range s.parties {
-		urls[k] = v
-	}
+	s.parties.Range(func(k, v interface{}) bool {
+		urls[k.(string)] = v.(bool)
+		return true
+	})
 
 	for rawUrl := range urls {
 		if rawUrl == s.url {
@@ -209,7 +204,18 @@ func (s *PartyInfo) updatePartyInfoGrpc(partyInfoReq chimera.PartyInfoResponse, 
 			"Unable to decode partyInfo response from host, %v", err)
 		return err
 	}
-	s.UpdatePartyInfoGrpc(pi.url, pi.recipients, pi.parties)
+	recipients := make(map[[nacl.KeySize]byte]string)
+	pi.recipients.Range(func(key, url interface{}) bool {
+		c := key.([32]byte)
+		recipients[c] = url.(string)
+		return true
+	})
+	parties := make(map[string]bool)
+	pi.parties.Range(func(k, v interface{}) bool {
+		parties[k.(string)] = v.(bool)
+		return true
+	})
+	s.UpdatePartyInfoGrpc(pi.url, recipients, parties)
 	return nil
 }
 
@@ -229,10 +235,16 @@ func (s *PartyInfo) updatePartyInfo(resp *http.Response, rawUrl string) error {
 func (s *PartyInfo) getEncoded(encodedPartyInfo []byte) []byte {
 	if s.grpc {
 		recipients := make(map[string][]byte)
-		for key, url := range s.recipients {
-			recipients[url] = key[:]
-		}
-		e, err := json.Marshal(UpdatePartyInfo{s.url, recipients, s.parties})
+		s.recipients.Range(func(key, url interface{}) bool {
+			copy(recipients[url.(string)], key.([]byte))
+			return true
+		})
+		urls := make(map[string]bool)
+		s.parties.Range(func(k, v interface{}) bool {
+			urls[k.(string)] = v.(bool)
+			return true
+		})
+		e, err := json.Marshal(UpdatePartyInfo{s.url, recipients, urls})
 		if err != nil {
 			log.Errorf("Marshalling failed %v", err)
 			return nil
@@ -253,6 +265,11 @@ func (s *PartyInfo) PollPartyInfo() {
 			select {
 			case <-ticker.C:
 				s.GetPartyInfo()
+				_, rep, _ := s.GetAllValues()
+				log.Println("-------------update end------------------")
+				for key, value := range rep {
+					log.Println(hex.EncodeToString(key[:]), value)
+				}
 			case <-quit:
 				ticker.Stop()
 				return
@@ -267,42 +284,41 @@ func (s *PartyInfo) PollPartyInfo() {
 // TODO: Control access via a channel for updates.
 func (s *PartyInfo) UpdatePartyInfo(encoded []byte) {
 	log.Debugf("Updating party info payload: %s", hex.EncodeToString(encoded))
-	pi, err := DecodePartyInfo(encoded)
+	// pi, err := DecodePartyInfo(encoded)
 
-	if err != nil {
-		log.WithField("encoded", encoded).Errorf(
-			"Unable to decode party info, error: %v", err)
-	}
+	// if err != nil {
+	// 	log.WithField("encoded", encoded).Errorf(
+	// 		"Unable to decode party info, error: %v", err)
+	// }
+	// s.parties.Range(func(k, v interface{}) bool {
+	// 	urls[k.(string)] = v.(bool)
+	// 	return true
+	// })
+	// pi.recipients.Pange(func(publicKey, url interface{}) bool {
+	// 	// we should ignore messages about ourselves
+	// 	// in order to stop people masquerading as you, there
+	// 	// should be a digital signature associated with each
+	// 	// url -> node broadcast
+	// 	if url != s.url {
+	// 		s.recipients.Store(publicKey, url)
+	// 	}
+	// 	return true
+	// })
 
-	for publicKey, url := range pi.recipients {
-		// we should ignore messages about ourselves
-		// in order to stop people masquerading as you, there
-		// should be a digital signature associated with each
-		// url -> node broadcast
-		if url != s.url {
-			s.recipients[publicKey] = url
-		}
-	}
-
-	for url := range pi.parties {
-		// we don't want to broadcast party info to ourselves
-		s.parties[url] = true
-	}
+	// for url := range pi.parties {
+	// 	// we don't want to broadcast party info to ourselves
+	// 	s.parties.Store(url, true)
+	// }
 }
 
 func (s *PartyInfo) UpdatePartyInfoGrpc(url string, recipients map[[nacl.KeySize]byte]string, parties map[string]bool) {
-	// log.Println("-------------update start------------------")
-	// log.Println(url)
-	// for key, value := range s.recipients {
-	// 	log.Println(hex.EncodeToString(key[:]), value)
-	// }
 	for publicKey, url := range recipients {
 		// we should ignore messages about ourselves
 		// in order to stop people masquerading as you, there
 		// should be a digital signature associated with each
 		// url -> node broadcast
 		if url != s.url {
-			s.recipients[publicKey] = url
+			s.recipients.Store(publicKey, url)
 			// log.Println("-------------updating--------------------")
 			// log.Println(hex.EncodeToString(publicKey[:]), url)
 		}
@@ -313,8 +329,15 @@ func (s *PartyInfo) UpdatePartyInfoGrpc(url string, recipients map[[nacl.KeySize
 	// }
 	for url := range parties {
 		// we don't want to broadcast party info to ourselves
-		s.parties[url] = true
+		if url != "" {
+			s.parties.Store(url, true)
+		}
 	}
+	// _, rep, _ := s.GetAllValues()
+	// log.Println("-------------update end------------------")
+	// for key, value := range rep {
+	// 	log.Println(hex.EncodeToString(key[:]), value)
+	// }
 }
 
 func PushGrpc(encoded []byte, path string, epl EncryptedPayload) error {

@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/binary"
+	"sync"
 
 	"github.com/blk-io/crux/utils"
 	"github.com/kevinburke/nacl"
@@ -63,43 +64,51 @@ func DecodePayloadWithRecipients(encoded []byte) (EncryptedPayload, [][]byte) {
 }
 
 func EncodePartyInfo(pi PartyInfo) []byte {
-
 	encoded := make([]byte, 256)
-
 	offset := 0
-
+	recipientsLen := 0
+	pi.recipients.Range(func(key, url interface{}) bool {
+		recipientsLen++
+		return true
+	})
 	encoded, offset = writeSlice([]byte(pi.url), encoded, offset)
-	encoded, offset = writeInt(len(pi.recipients), encoded, offset)
-	pi.RLock()
-	for recipient, url := range pi.recipients {
+	encoded, offset = writeInt(recipientsLen, encoded, offset)
+	pi.recipients.Range(func(recipient, url interface{}) bool {
+		c := recipient.([32]byte)
 		tuple := [][]byte{
-			recipient[:],
-			[]byte(url),
+			c[:],
+			[]byte(url.(string)),
 		}
 		encoded, offset = writeSliceOfSlice(tuple, encoded, offset)
-	}
-	defer pi.RUnlock()
-
-	parties := make([][]byte, len(pi.parties))
+		return true
+	})
+	partiesLen := 0
+	pi.parties.Range(func(k, v interface{}) bool {
+		partiesLen++
+		return true
+	})
+	parties := make([][]byte, partiesLen+1)
 	i := 0
-	for party := range pi.parties {
-		parties[i] = []byte(party)
-		i += 1
-	}
+	pi.parties.Range(func(k, v interface{}) bool {
+		parties[i] = []byte(k.(string))
+		i++
+		return true
+	})
 	encoded, offset = writeSliceOfSlice(parties, encoded, offset)
 
 	return encoded
 }
 
 func DecodePartyInfo(encoded []byte) (PartyInfo, error) {
+	var recipients sync.Map
+	var parties sync.Map
 	pi := PartyInfo{
-		recipients: make(map[[nacl.KeySize]byte]string),
-		parties:    make(map[string]bool),
+		recipients: recipients,
+		parties:    parties,
 	}
 
 	url, offset := readSlice(encoded, 0)
 	pi.url = string(url)
-
 	var size int
 	size, offset = readInt(encoded, offset)
 
@@ -110,13 +119,13 @@ func DecodePartyInfo(encoded []byte) (PartyInfo, error) {
 		if err != nil {
 			return PartyInfo{}, err
 		}
-		pi.recipients[*key] = string(kv[1])
+		pi.recipients.Store(*key, string(kv[1]))
 	}
 
-	var parties [][]byte
-	parties, offset = readSliceOfSlice(encoded, offset)
-	for _, party := range parties {
-		pi.parties[string(party)] = true
+	var partiesTmp [][]byte
+	partiesTmp, offset = readSliceOfSlice(encoded, offset)
+	for _, party := range partiesTmp {
+		pi.parties.Store(string(party), true)
 	}
 
 	return pi, nil
