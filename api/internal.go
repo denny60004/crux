@@ -45,7 +45,11 @@ type PartyInfo struct {
 // GetRecipient retrieves the URL associated with the provided recipient.
 func (s *PartyInfo) GetRecipient(key nacl.Key) (string, bool) {
 	value, ok := s.recipients.Load(*key)
-	return value.(string), ok
+	var str string
+	if ok {
+		str = value.(string)
+	}
+	return str, ok
 }
 
 func (s *PartyInfo) GetAllValues() (string, map[[nacl.KeySize]byte]string, map[string]bool) {
