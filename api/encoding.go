@@ -87,7 +87,7 @@ func EncodePartyInfo(pi PartyInfo) []byte {
 		partiesLen++
 		return true
 	})
-	parties := make([][]byte, partiesLen+1)
+	parties := make([][]byte, partiesLen)
 	i := 0
 	pi.parties.Range(func(k, v interface{}) bool {
 		parties[i] = []byte(k.(string))

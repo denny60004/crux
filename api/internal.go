@@ -122,7 +122,7 @@ func (s *PartyInfo) GetPartyInfoGrpc() {
 			log.Errorf("Error in updating party info %s", err)
 			continue
 		} else {
-			// log.Printf("Connected to the other node %s", rawUrl)
+			log.Printf("Connected to the other node %s", rawUrl)
 		}
 		err = s.updatePartyInfoGrpc(*partyInfoResp, s.url)
 		if err != nil {
@@ -265,11 +265,6 @@ func (s *PartyInfo) PollPartyInfo() {
 			select {
 			case <-ticker.C:
 				s.GetPartyInfo()
-				_, rep, _ := s.GetAllValues()
-				log.Println("-------------update end------------------")
-				for key, value := range rep {
-					log.Println(hex.EncodeToString(key[:]), value)
-				}
 			case <-quit:
 				ticker.Stop()
 				return
@@ -319,19 +314,11 @@ func (s *PartyInfo) UpdatePartyInfoGrpc(url string, recipients map[[nacl.KeySize
 		// url -> node broadcast
 		if url != s.url {
 			s.recipients.Store(publicKey, url)
-			// log.Println("-------------updating--------------------")
-			// log.Println(hex.EncodeToString(publicKey[:]), url)
 		}
 	}
-	// log.Println("-------------update end------------------")
-	// for key, value := range s.recipients {
-	// 	log.Println(hex.EncodeToString(key[:]), value)
-	// }
 	for url := range parties {
 		// we don't want to broadcast party info to ourselves
-		if url != "" {
-			s.parties.Store(url, true)
-		}
+		s.parties.Store(url, true)
 	}
 	// _, rep, _ := s.GetAllValues()
 	// log.Println("-------------update end------------------")
