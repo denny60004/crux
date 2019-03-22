@@ -279,31 +279,27 @@ func (s *PartyInfo) PollPartyInfo() {
 // TODO: Control access via a channel for updates.
 func (s *PartyInfo) UpdatePartyInfo(encoded []byte) {
 	log.Debugf("Updating party info payload: %s", hex.EncodeToString(encoded))
-	// pi, err := DecodePartyInfo(encoded)
+	pi, err := DecodePartyInfo(encoded)
 
-	// if err != nil {
-	// 	log.WithField("encoded", encoded).Errorf(
-	// 		"Unable to decode party info, error: %v", err)
-	// }
-	// s.parties.Range(func(k, v interface{}) bool {
-	// 	urls[k.(string)] = v.(bool)
-	// 	return true
-	// })
-	// pi.recipients.Pange(func(publicKey, url interface{}) bool {
-	// 	// we should ignore messages about ourselves
-	// 	// in order to stop people masquerading as you, there
-	// 	// should be a digital signature associated with each
-	// 	// url -> node broadcast
-	// 	if url != s.url {
-	// 		s.recipients.Store(publicKey, url)
-	// 	}
-	// 	return true
-	// })
-
-	// for url := range pi.parties {
-	// 	// we don't want to broadcast party info to ourselves
-	// 	s.parties.Store(url, true)
-	// }
+	if err != nil {
+		log.WithField("encoded", encoded).Errorf(
+			"Unable to decode party info, error: %v", err)
+	}
+	pi.parties.Range(func(k, v interface{}) bool {
+		s.parties.Store(k.(string), v.(bool))
+		return true
+	})
+	pi.recipients.Range(func(publicKey, url interface{}) bool {
+		// we should ignore messages about ourselves
+		// in order to stop people masquerading as you, there
+		// should be a digital signature associated with each
+		// url -> node broadcast
+		if url != s.url {
+			c := publicKey.([32]byte)
+			s.recipients.Store(c, url.(string))
+		}
+		return true
+	})
 }
 
 func (s *PartyInfo) UpdatePartyInfoGrpc(url string, recipients map[[nacl.KeySize]byte]string, parties map[string]bool) {
