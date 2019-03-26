@@ -231,6 +231,7 @@ func (s *SecureEnclave) publishPayload(epl api.EncryptedPayload, recipient []byt
 	if err != nil {
 		log.WithField("recipient", recipient).Errorf(
 			"Unable to decode key for recipient, error: %v", err)
+			return
 	}
 
 	if url, ok := s.PartyInfo.GetRecipient(key); ok {
