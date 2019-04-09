@@ -258,7 +258,7 @@ func (s *PartyInfo) getEncoded(encodedPartyInfo []byte) []byte {
 	return encodedPartyInfo[:]
 }
 
-func (s *PartyInfo) PollPartyInfo() {
+func (s *PartyInfo) PollPartyInfo(pi *PartyInfo) {
 	time.Sleep(time.Duration(rand.Intn(16)) * time.Second)
 	s.GetPartyInfo()
 
@@ -269,6 +269,12 @@ func (s *PartyInfo) PollPartyInfo() {
 			select {
 			case <-ticker.C:
 				s.GetPartyInfo()
+				url, rep, maps := s.GetAllValues()
+				(*pi).UpdatePartyInfoGrpc(url, rep, maps)
+				// log.Println("-------------update end------------------")
+				// for key, value := range rep {
+				// 	log.Println(hex.EncodeToString(key[:]), value)
+				// }
 			case <-quit:
 				ticker.Stop()
 				return
