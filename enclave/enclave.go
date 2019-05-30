@@ -231,6 +231,7 @@ func (s *SecureEnclave) publishPayload(epl api.EncryptedPayload, recipient []byt
 	if err != nil {
 		log.WithField("recipient", recipient).Errorf(
 			"Unable to decode key for recipient, error: %v", err)
+			return
 	}
 
 	if url, ok := s.PartyInfo.GetRecipient(key); ok {
@@ -438,6 +439,7 @@ func (s *SecureEnclave) GetEncodedPartyInfo() []byte {
 }
 
 func (s *SecureEnclave) GetEncodedPartyInfoGrpc() []byte {
+	// log.Println(s.PartyInfo.GetAllValues())
 	encoded, err := json.Marshal(api.PartyInfoResponse{Payload: api.EncodePartyInfo(s.PartyInfo)})
 	if err != nil {
 		log.Errorf("Marshalling failed %v", err)
