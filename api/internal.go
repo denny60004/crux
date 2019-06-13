@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/blk-io/chimera-api/chimera"
+	"github.com/denny60004/chimera-api/chimera"
 	"github.com/blk-io/crux/utils"
 	"github.com/kevinburke/nacl"
 	log "github.com/sirupsen/logrus"

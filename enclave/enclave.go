@@ -102,6 +102,24 @@ func Init(
 	return &enc
 }
 
+// SendSignedTx .
+func (s *SecureEnclave) SendSignedTx(message *[]byte, recipients [][]byte) ([]byte, error) {
+	var err error
+	var payload []byte
+
+	payload, err = s.RetrieveDefault(message)
+	if err != nil {
+		log.WithField("payload", payload).Errorf(
+			"Unable to retrieve payload, %v", err)
+		return nil, err
+	}
+	err = s.Delete(message)
+	if err != nil {
+		log.Error("Unable to delete original payload")
+	}
+	return s.Store(&payload, nil, recipients)
+}
+
 // Store a payload submitted via an Ethereum node.
 // This function encrypts the payload, and distributes the encrypted payload to the other
 // specified recipients in the network.
@@ -172,18 +190,6 @@ func (s *SecureEnclave) store(
 		epl.RecipientBoxes[i] = sealedBox
 	}
 
-	// store locally
-	// recipientKey, err := utils.ToKey(recipients[0])
-	// if err != nil {
-	// 	log.WithField("recipientKey", recipientKey).Errorf(
-	// 		"Unable to load recipient, %v", err)
-	// }
-
-	// sharedKey := s.resolveSharedKey(senderPrivKey, senderPubKey, recipientKey)
-
-	// sealedBox := sealPayload(epl.RecipientNonce, masterKey, sharedKey)
-	// epl.RecipientBoxes = [][]byte{sealedBox}
-
 	encodedEpl := api.EncodePayloadWithRecipients(epl, recipients)
 	digest, err := s.storePayload(epl, encodedEpl)
 
@@ -231,7 +237,7 @@ func (s *SecureEnclave) publishPayload(epl api.EncryptedPayload, recipient []byt
 	if err != nil {
 		log.WithField("recipient", recipient).Errorf(
 			"Unable to decode key for recipient, error: %v", err)
-			return
+		return
 	}
 
 	if url, ok := s.PartyInfo.GetRecipient(key); ok {

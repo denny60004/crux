@@ -17,7 +17,19 @@ type SendResponse struct {
 	Key string `json:"key"`
 }
 
-// ReceiveRequest
+// StoreRequest is response from the server for the SendRequest
+type StoreRequest struct {
+	Payload string `json:"payload"`
+}
+
+type SendSignedRequest struct {
+	// Payload is the transaction payload data we wish to store.
+	Payload string `json:"payload"`
+	// To is a list of the recipient nodes that should be privy to this transaction payload.
+	To []string `json:"to"`
+}
+
+// ReceiveRequest .
 type ReceiveRequest struct {
 	Key string `json:"key"`
 	To  string `json:"to"`

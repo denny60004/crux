@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/blk-io/chimera-api/chimera"
+	"github.com/denny60004/chimera-api/chimera"
 	"github.com/blk-io/crux/api"
 	"github.com/blk-io/crux/enclave"
 	"github.com/blk-io/crux/storage"

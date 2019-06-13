@@ -22,6 +22,7 @@ import (
 // Enclave is the interface used by the transaction enclaves.
 type Enclave interface {
 	Store(message *[]byte, sender []byte, recipients [][]byte) ([]byte, error)
+	SendSignedTx(message *[]byte, recipients [][]byte) ([]byte, error)
 	StorePayloadGrpc(epl api.EncryptedPayload, encoded []byte) ([]byte, error)
 	StorePayload(encoded []byte) ([]byte, error)
 	Retrieve(digestHash *[]byte, to *[]byte) ([]byte, error)

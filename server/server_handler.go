@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/blk-io/chimera-api/chimera"
 	"github.com/blk-io/crux/api"
+	"github.com/denny60004/chimera-api/chimera"
 	"github.com/kevinburke/nacl"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -60,6 +60,58 @@ func (s *Server) processSend(b64from string, b64recipients []string, payload *[]
 	}
 
 	return s.Enclave.Store(payload, sender, recipients)
+}
+
+func (s *Server) StoreRaw(ctx context.Context, in *chimera.StoreRequest) (*chimera.SendResponse, error) {
+	log.Info("Process Store Raw...")
+	key, err := s.processStoreRaw(&in.Payload)
+	var sendResp chimera.SendResponse
+	if err != nil {
+		log.Error(err)
+	} else {
+		sendResp = chimera.SendResponse{Key: key}
+	}
+	return &sendResp, err
+}
+
+func (s *Server) processStoreRaw(payload *[]byte) ([]byte, error) {
+	log.WithFields(log.Fields{
+		"payload": hex.EncodeToString(*payload)}).Debugf(
+		"Processing store raw request")
+
+	return s.Enclave.Store(payload, nil, nil)
+}
+
+func (s *Server) SendSignedTx(ctx context.Context, in *chimera.SendSignedRequest) (*chimera.SendResponse, error) {
+	log.Info("Process Send SignedTx...")
+	key, err := s.processSendSignedTx(&in.Payload, in.GetTo())
+	var sendResp chimera.SendResponse
+	if err != nil {
+		log.Error(err)
+	} else {
+		sendResp = chimera.SendResponse{Key: key}
+	}
+	return &sendResp, err
+}
+
+func (s *Server) processSendSignedTx(payload *[]byte, b64recipients []string) ([]byte, error) {
+	log.WithFields(log.Fields{
+		"b64Recipients": b64recipients,
+		"payload":       hex.EncodeToString(*payload)}).Debugf(
+		"Processing send signed Tx")
+
+	recipients := make([][]byte, len(b64recipients))
+	for i, value := range b64recipients {
+		recipient, err := base64.StdEncoding.DecodeString(value)
+		if err != nil {
+			decodeErrorGRPC("recipients", value, err)
+			return nil, err
+		} else {
+			recipients[i] = recipient
+		}
+	}
+
+	return s.Enclave.SendSignedTx(payload, recipients)
 }
 
 func (s *Server) Receive(ctx context.Context, in *chimera.ReceiveRequest) (*chimera.ReceiveResponse, error) {
