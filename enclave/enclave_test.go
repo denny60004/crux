@@ -2,10 +2,6 @@ package enclave
 
 import (
 	"bytes"
-	"github.com/blk-io/crux/api"
-	"github.com/blk-io/crux/storage"
-	"github.com/blk-io/crux/utils"
-	"github.com/kevinburke/nacl"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -13,6 +9,11 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/denny60004/crux/api"
+	"github.com/denny60004/crux/storage"
+	"github.com/denny60004/crux/utils"
+	"github.com/kevinburke/nacl"
 )
 
 var message = []byte("Test message")

@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blk-io/crux/api"
-	"github.com/blk-io/crux/config"
-	"github.com/blk-io/crux/enclave"
-	"github.com/blk-io/crux/server"
-	"github.com/blk-io/crux/storage"
+	"github.com/denny60004/crux/api"
+	"github.com/denny60004/crux/config"
+	"github.com/denny60004/crux/enclave"
+	"github.com/denny60004/crux/server"
+	"github.com/denny60004/crux/storage"
 	log "github.com/sirupsen/logrus"
 )
 

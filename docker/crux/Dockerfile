@@ -12,7 +12,7 @@ ENV OWN_URL=""
 ENV OTHER_NODES=""
 ENV PORT=""
 
-RUN git clone https://github.com/blk-io/crux.git
+RUN git clone https://github.com/denny60004/crux.git
 
 WORKDIR /crux
 

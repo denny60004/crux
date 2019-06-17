@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"sync"
 
-	"github.com/blk-io/crux/utils"
+	"github.com/denny60004/crux/utils"
 	"github.com/kevinburke/nacl"
 )
 

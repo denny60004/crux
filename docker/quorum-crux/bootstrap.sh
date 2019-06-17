@@ -12,7 +12,7 @@ rm -r build
 popd >/dev/null
 
 # make/install crux
-git clone https://github.com/blk-io/crux.git
+git clone https://github.com/denny60004/crux.git
 cd crux
 git checkout tags/v1.0.3
 make setup && make

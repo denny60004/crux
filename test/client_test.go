@@ -2,11 +2,12 @@ package client
 
 import (
 	"encoding/base64"
+	"reflect"
+	"testing"
+
 	"github.com/denny60004/chimera-api/chimera"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"reflect"
-	"testing"
 )
 
 const sender = "zSifTnkv5r4K67Dq304eVcM4FpxGfHLe1yTCBm0/7wg="
@@ -55,7 +56,7 @@ func TestIntegration(t *testing.T) {
 			To:      []string{},
 		},
 		{
-			Payload: []byte("blk-io crux"),
+			Payload: []byte("denny60004 crux"),
 		},
 	}
 

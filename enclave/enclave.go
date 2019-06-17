@@ -13,9 +13,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/blk-io/crux/api"
-	"github.com/blk-io/crux/storage"
-	"github.com/blk-io/crux/utils"
+	"github.com/denny60004/crux/api"
+	"github.com/denny60004/crux/storage"
+	"github.com/denny60004/crux/utils"
 	"github.com/kevinburke/nacl"
 	"github.com/kevinburke/nacl/box"
 	"github.com/kevinburke/nacl/secretbox"

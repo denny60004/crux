@@ -1,4 +1,4 @@
-module github.com/blk-io/crux
+module github.com/denny60004/crux
 
 require (
 	github.com/denny60004/chimera-api v0.0.0-20190613070328-7ccffce609f4

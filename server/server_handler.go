@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/blk-io/crux/api"
 	"github.com/denny60004/chimera-api/chimera"
+	"github.com/denny60004/crux/api"
 	"github.com/kevinburke/nacl"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
