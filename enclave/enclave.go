@@ -107,17 +107,95 @@ func (s *SecureEnclave) SendSignedTx(message *[]byte, recipients [][]byte) ([]by
 	var err error
 	var payload []byte
 
-	payload, err = s.RetrieveDefault(message)
+	epl, masterKey, err := s.RetrieveMasterKey(message)
 	if err != nil {
 		log.WithField("payload", payload).Errorf(
-			"Unable to retrieve payload, %v", err)
+			"Unable to retrieve master key, %v", err)
 		return nil, err
 	}
-	err = s.Delete(message)
-	if err != nil {
-		log.Error("Unable to delete original payload")
+	epl.RecipientBoxes = make([][]byte, len(recipients))
+
+	senderPubKey := s.PubKeys[0]
+	senderPrivKey := s.PrivKeys[0]
+	var toSelf bool
+	if len(recipients) == 0 {
+		toSelf = true
+		recipients = [][]byte{(*s.selfPubKey)[:]}
+	} else {
+		toSelf = false
 	}
-	return s.Store(&payload, nil, recipients)
+
+	for i, recipient := range recipients {
+		recipientKey, err := utils.ToKey(recipient)
+		if err != nil {
+			log.WithField("recipientKey", recipientKey).Errorf(
+				"Unable to load recipient, %v", err)
+			continue
+		}
+
+		sharedKey := s.resolveSharedKey(senderPrivKey, senderPubKey, recipientKey)
+		sealedBox := sealPayload(epl.RecipientNonce, masterKey, sharedKey)
+
+		epl.RecipientBoxes[i] = sealedBox
+	}
+
+	encodedEpl := api.EncodePayloadWithRecipients(epl, recipients)
+	digest, err := s.storePayload(epl, encodedEpl)
+
+	if !toSelf {
+		for i, recipient := range recipients {
+			recipientEpl := api.EncryptedPayload{
+				Sender:         senderPubKey,
+				CipherText:     epl.CipherText,
+				Nonce:          epl.Nonce,
+				RecipientBoxes: [][]byte{epl.RecipientBoxes[i]},
+				RecipientNonce: epl.RecipientNonce,
+			}
+
+			log.WithFields(log.Fields{
+				"recipient": hex.EncodeToString(recipient), "digest": hex.EncodeToString(digest),
+			}).Debug("Publishing payload")
+			s.publishPayload(recipientEpl, recipient)
+		}
+	}
+
+	return digest, err
+}
+
+// RetrieveMasterKey .
+func (s *SecureEnclave) RetrieveMasterKey(digestHash *[]byte) (api.EncryptedPayload, nacl.Key, error) {
+	// key := (*s.PubKeys[0])[:]
+	encoded, err := s.Db.Read(digestHash)
+	epl, recipients := api.DecodePayloadWithRecipients(*encoded)
+	if err != nil {
+		return epl, nil, err
+	}
+
+	masterKey := new([nacl.KeySize]byte)
+
+	var senderPubKey, senderPrivKey, recipientPubKey, sharedKey nacl.Key
+
+	// This is a payload originally sent to us by another node
+	senderPubKey = epl.Sender
+	recipientPubKey, err = utils.ToKey(recipients[0])
+	if err != nil {
+		return epl, nil, err
+	}
+	senderPrivKey, err = s.resolvePrivateKey(senderPubKey)
+	if err != nil {
+		return epl, nil, err
+	}
+
+	// we might not have the key in our cache if constellation was restarted, hence we may
+	// need to recreate
+	sharedKey = s.resolveSharedKey(senderPrivKey, senderPubKey, recipientPubKey)
+
+	_, ok := secretbox.Open(masterKey[:0], epl.RecipientBoxes[0], epl.RecipientNonce, sharedKey)
+	if !ok {
+		return epl, nil, errors.New("unable to open master key secret box")
+	}
+
+	return epl, masterKey, nil
 }
 
 // Store a payload submitted via an Ethereum node.
@@ -127,9 +205,8 @@ func (s *SecureEnclave) SendSignedTx(message *[]byte, recipients [][]byte) ([]by
 func (s *SecureEnclave) Store(
 	message *[]byte, sender []byte, recipients [][]byte) ([]byte, error) {
 
-	var err error
 	var senderPubKey, senderPrivKey nacl.Key
-
+	var err error
 	if len(sender) == 0 {
 		// from address is either default or specified on communication
 		senderPubKey = s.PubKeys[0]
