@@ -166,10 +166,10 @@ func (s *SecureEnclave) SendSignedTx(message *[]byte, recipients [][]byte) ([]by
 func (s *SecureEnclave) RetrieveMasterKey(digestHash *[]byte) (api.EncryptedPayload, nacl.Key, error) {
 	// key := (*s.PubKeys[0])[:]
 	encoded, err := s.Db.Read(digestHash)
-	epl, recipients := api.DecodePayloadWithRecipients(*encoded)
 	if err != nil {
-		return epl, nil, err
+		return api.EncryptedPayload{}, nil, err
 	}
+	epl, recipients := api.DecodePayloadWithRecipients(*encoded)
 
 	masterKey := new([nacl.KeySize]byte)
 
