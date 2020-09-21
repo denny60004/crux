@@ -109,6 +109,10 @@ func (s *PartyInfo) GetPartyInfoGrpc() {
 		}
 		var completeUrl url.URL
 		url, err := completeUrl.Parse(rawUrl)
+		if err != nil {
+			log.Errorf("Parse url failed!")
+			continue
+		}
 		conn, err := grpc.Dial(url.Host, grpc.WithInsecure())
 		if err != nil {
 			log.Errorf("Connection to gRPC server failed with error %s", err)
@@ -336,6 +340,10 @@ func (s *PartyInfo) UpdatePartyInfoGrpc(url string, recipients map[[nacl.KeySize
 func PushGrpc(encoded []byte, path string, epl EncryptedPayload) error {
 	var completeUrl url.URL
 	url, err := completeUrl.Parse(path)
+	if err != nil {
+		log.Errorf("Parse url failed! %s", err)
+		return err
+	}
 	conn, err := grpc.Dial(url.Host, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("Connection to gRPC server failed with error %s", err)
