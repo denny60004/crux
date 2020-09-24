@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -19,6 +20,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 // EncryptedPayload is the struct used for storing all data associated with an encrypted
@@ -103,6 +105,9 @@ func (s *PartyInfo) GetPartyInfoGrpc() {
 		urls[k.(string)] = v.(bool)
 		return true
 	})
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: true,
+	}
 	for rawUrl := range urls {
 		if rawUrl == s.url {
 			continue
@@ -113,7 +118,7 @@ func (s *PartyInfo) GetPartyInfoGrpc() {
 			log.Errorf("Parse url failed!")
 			continue
 		}
-		conn, err := grpc.Dial(url.Host, grpc.WithInsecure())
+		conn, err := grpc.Dial(url.Host, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 		if err != nil {
 			log.Errorf("Connection to gRPC server failed with error %s", err)
 			continue
@@ -344,7 +349,10 @@ func PushGrpc(encoded []byte, path string, epl EncryptedPayload) error {
 		log.Errorf("Parse url failed! %s", err)
 		return err
 	}
-	conn, err := grpc.Dial(url.Host, grpc.WithInsecure())
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: true,
+	}
+	conn, err := grpc.Dial(url.Host, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	if err != nil {
 		log.Fatalf("Connection to gRPC server failed with error %s", err)
 	}
