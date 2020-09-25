@@ -355,8 +355,9 @@ func PushGrpc(encoded []byte, path string, epl EncryptedPayload) error {
 		return err
 	}
 	pool, err := x509.SystemCertPool()
-	if err != nil {
+	if err != nil || pool == nil {
 		log.Errorf("Can't get system root CA")
+		pool = x509.NewCertPool()
 	}
 	tlsConfig := &tls.Config{
 		RootCAs: pool,
