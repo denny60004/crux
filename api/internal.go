@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -105,8 +106,12 @@ func (s *PartyInfo) GetPartyInfoGrpc() {
 		urls[k.(string)] = v.(bool)
 		return true
 	})
+	pool, err := x509.SystemCertPool()
+	if err != nil {
+		log.Errorf("Can't get system root CA")
+	}
 	tlsConfig := &tls.Config{
-		InsecureSkipVerify: true,
+		RootCAs: pool,
 	}
 	for rawUrl := range urls {
 		if rawUrl == s.url {
@@ -349,8 +354,12 @@ func PushGrpc(encoded []byte, path string, epl EncryptedPayload) error {
 		log.Errorf("Parse url failed! %s", err)
 		return err
 	}
+	pool, err := x509.SystemCertPool()
+	if err != nil {
+		log.Errorf("Can't get system root CA")
+	}
 	tlsConfig := &tls.Config{
-		InsecureSkipVerify: true,
+		RootCAs: pool,
 	}
 	conn, err := grpc.Dial(url.Host, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	if err != nil {
