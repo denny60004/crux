@@ -1,5 +1,7 @@
 module github.com/denny60004/crux
 
+go 1.15
+
 require (
 	github.com/denny60004/chimera-api v0.0.0-20190613070328-7ccffce609f4
 	github.com/grpc-ecosystem/grpc-gateway v1.9.0
