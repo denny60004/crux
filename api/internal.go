@@ -203,10 +203,6 @@ func (s *PartyInfo) GetPartyInfo() {
 
 func (s *PartyInfo) updatePartyInfoGrpc(partyInfoReq chimera.PartyInfoResponse, rawUrl string) error {
 	pi, err := DecodePartyInfo(partyInfoReq.Payload)
-	// log.Println("-------------Update info------------------")
-	// for key, value := range pi.recipients {
-	// 	log.Println(hex.EncodeToString(key[:]), value)
-	// }
 	if err != nil {
 		log.WithField("url", rawUrl).Errorf(
 			"Unable to decode partyInfo response from host, %v", err)
@@ -279,6 +275,7 @@ func (s *PartyInfo) PollPartyInfo(pi *PartyInfo) {
 				// for key, value := range rep {
 				// 	log.Println(hex.EncodeToString(key[:]), value)
 				// }
+				// log.Println("-------------update end------------------")
 			case <-quit:
 				ticker.Stop()
 				return
@@ -322,9 +319,7 @@ func (s *PartyInfo) UpdatePartyInfoGrpc(url string, recipients map[[nacl.KeySize
 		// in order to stop people masquerading as you, there
 		// should be a digital signature associated with each
 		// url -> node broadcast
-		if url != s.url {
-			s.recipients.Store(publicKey, url)
-		}
+		s.recipients.Store(publicKey, url)
 	}
 	for url := range parties {
 		// we don't want to broadcast party info to ourselves
