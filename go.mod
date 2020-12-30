@@ -13,4 +13,6 @@ require (
 	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
 	golang.org/x/net v0.0.0-20190611141213-3f473d35a33a
 	google.golang.org/grpc v1.21.1
+	gorm.io/driver/mysql v1.0.3
+	gorm.io/gorm v1.20.9
 )

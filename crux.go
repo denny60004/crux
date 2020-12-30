@@ -71,9 +71,14 @@ func main() {
 	ipcFile := config.GetString(config.Socket)
 	storagePath := path.Join(workDir, dbStorage)
 	ipcPath := path.Join(workDir, ipcFile)
+	dbPath := config.GetString(config.DBPath)
 	var db storage.DataStore
 	var err error
-	db, err = storage.InitLevelDb(storagePath)
+	if dbPath != "" {
+		db, err = storage.InitMysql(dbPath)
+	} else {
+		db, err = storage.InitLevelDb(storagePath)
+	}
 
 	if err != nil {
 		log.Fatalf("Unable to initialise storage, error: %v", err)

@@ -22,6 +22,7 @@ const (
 	PrivateKeys        = "privatekeys"
 	Port               = "port"
 	Socket             = "socket"
+	DBPath             = "dbpath"
 
 	GenerateKeys = "generate-keys"
 
@@ -54,6 +55,7 @@ func InitFlags() {
 	flag.String(PublicKeys, "", "Public keys hosted by this node")
 	flag.String(PrivateKeys, "", "Private keys hosted by this node")
 	flag.String(Storage, "crux.db", "Database storage file name")
+	flag.String(DBPath, "", "Database storage path")
 	// flag.Bool(BerkeleyDb, false,
 	// 	"Use Berkeley DB for working with an existing Constellation data store [experimental]")
 

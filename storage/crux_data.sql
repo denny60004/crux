@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS `crux_data` (
+  `key`    BLOB NOT NULL,
+  `value`   BLOB NOT NULL
+) ENGINE = INNODB;
