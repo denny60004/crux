@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"time"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -24,6 +26,11 @@ type CruxData struct {
 // InitMysql .
 func InitMysql(dbPath string) (*sqlDB, error) {
 	conn, err := gorm.Open(mysql.Open(dbPath), &gorm.Config{})
+	sql, err := conn.DB()
+	if err != nil {
+		return nil, err
+	}
+	sql.SetConnMaxLifetime(300 * time.Second)
 	db := &sqlDB{
 		dbPath: dbPath,
 		conn:   conn,
