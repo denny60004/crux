@@ -339,15 +339,6 @@ func PushGrpc(encoded []byte, path string, epl EncryptedPayload) error {
 		log.Errorf("Parse url failed! %s", err)
 		return err
 	}
-	conn, err := grpc.Dial(url.Host, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("Connection to gRPC server failed with error %s", err)
-	}
-	defer conn.Close()
-	cli := chimera.NewClientClient(conn)
-	if cli == nil {
-		log.Fatalf("Client is not intialised")
-	}
 
 	var sender [32]byte
 	var nonce [32]byte
@@ -364,9 +355,28 @@ func PushGrpc(encoded []byte, path string, epl EncryptedPayload) error {
 		ReciepientBoxes: epl.RecipientBoxes,
 	}
 	pushPayload := chimera.PushPayload{Ep: &encrypt, Encoded: encoded}
-	_, err = cli.Push(context.Background(), &pushPayload)
-	if err != nil {
-		log.Errorf("Push failed with %s", err)
+	sucess := false
+	for i := 0; i < 10; i++ {
+		conn, err := grpc.Dial(url.Host, grpc.WithInsecure())
+		if err != nil {
+			log.Fatalf("Connection to gRPC server failed with error %s", err)
+		}
+		cli := chimera.NewClientClient(conn)
+		if cli == nil {
+			log.Fatalf("Client is not intialised")
+		}
+		_, err = cli.Push(context.Background(), &pushPayload)
+		if err != nil {
+			log.Errorf("Push failed with %s, Retry...", err)
+			conn.Close()
+			time.Sleep(500 * time.Millisecond)
+		} else {
+			sucess = true
+			conn.Close()
+			break
+		}
+	}
+	if !sucess {
 		return err
 	}
 	return nil
